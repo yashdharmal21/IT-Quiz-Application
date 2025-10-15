@@ -1,0 +1,162 @@
+pyinstaller --onefile --add-data "templates;templates" --add-data "static;static" app.py
+
+import tkinter as tk
+import random
+from tkinter import messagebox
+import socket
+import json
+import os
+import mysql.connector
+
+class QuizApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Quiz Competition")
+        self.root.geometry("500x400")
+
+        self.valid_ids = ['12345', '67890', '11223', '44556', '77889']
+        self.student_name = tk.StringVar()
+        self.student_id = tk.StringVar()
+        self.college_name = tk.StringVar()
+        self.attempts_file = "attempts.txt"  # Tracks attempts to ensure one try per student
+
+        self.build_start_screen()
+
+    def fetch_questions(self):
+        """Fetch questions from the admin PC using sockets."""
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            client_socket.connect(('172.20.10.3', 5000))  # Admin PC's IP
+            
+            # Receiving data in chunks and assembling it
+            chunks = []
+            while True:
+                chunk = client_socket.recv(4096)  # Buffer size can be adjusted
+                if not chunk:
+                    break
+                chunks.append(chunk)
+
+            data = b''.join(chunks)  # Combine all chunks
+            self.questions = json.loads(data.decode())  # Decode and parse JSON
+            print("Questions fetched successfully.")
+        except Exception as e:
+            messagebox.showerror("Connection Error", f"Could not connect to server: {e}")
+            self.questions = []  # Ensure questions is empty if there's an error
+        finally:
+            client_socket.close()  # Ensure the socket is closed
+
+    def build_start_screen(self):
+        self.clear_screen()
+        tk.Label(self.root, text="Enter Name:").pack(pady=10)
+        tk.Entry(self.root, textvariable=self.student_name).pack(pady=5)
+
+        tk.Label(self.root, text="Enter College Name:").pack(pady=10)
+        tk.Entry(self.root, textvariable=self.college_name).pack(pady=5)
+
+        tk.Label(self.root, text="Enter Student ID:").pack(pady=10)
+        tk.Entry(self.root, textvariable=self.student_id).pack(pady=5)
+
+        tk.Button(self.root, text="Start Quiz", command=self.check_id).pack(pady=20)
+
+    def check_id(self):
+        student_id = self.student_id.get()
+        if student_id in self.valid_ids:
+            self.check_attempt()  # Proceed to check if they've already attempted the quiz
+        else:
+            messagebox.showwarning("Invalid ID", "Your Student ID is not valid!")
+
+    def check_attempt(self):
+        student = f"{self.student_name.get()}_{self.student_id.get()}"
+        if os.path.exists(self.attempts_file):
+            with open(self.attempts_file, 'r') as file:
+                attempts = file.read().splitlines()
+            if student in attempts:
+                messagebox.showwarning("Already Attempted", "You have already attempted the quiz!")
+                return
+        self.start_quiz()
+
+    def start_quiz(self):
+        if self.student_name.get() and self.student_id.get() and self.college_name.get():
+            self.fetch_questions()  # Fetch questions from admin
+            if not self.questions:  # Check if questions were fetched
+                messagebox.showerror("No Questions", "No questions available for the quiz.")
+                return
+            random.shuffle(self.questions)  # Shuffle the questions
+            self.current_question = 0
+            self.score = 0
+            self.display_question()
+        else:
+            messagebox.showwarning("Input Error", "Please enter all required fields (Name, College, and Student ID)")
+
+    def display_question(self):
+        self.clear_screen()
+        if self.current_question < len(self.questions):
+            q = self.questions[self.current_question]
+            tk.Label(self.root, text=q['question']).pack(pady=10)
+
+            self.var = tk.StringVar()
+            for option in q['options']:
+                tk.Radiobutton(self.root, text=option, variable=self.var, value=option).pack(pady=5)
+
+            tk.Button(self.root, text="Next", command=self.next_question).pack(pady=20)
+        else:
+            self.show_result()
+
+    def next_question(self):
+        selected_answer = str(self.var.get()).strip().lower()
+        if selected_answer == "":
+            messagebox.showwarning("Select an Answer", "Please select an answer before proceeding!")
+            return
+
+        correct_answer = str(self.questions[self.current_question]['answer']).strip().lower()
+        if selected_answer == correct_answer:
+            self.score += 1
+
+        self.current_question += 1
+        self.display_question()
+
+    def show_result(self):
+        self.clear_screen()
+        tk.Label(self.root, text="Quiz Over!").pack(pady=10)
+        tk.Label(self.root, text=f"Your Score: {self.score} / {len(self.questions)}").pack(pady=10)
+
+        # Save score to database
+        self.save_score()
+
+        tk.Button(self.root, text="Exit", command=self.root.quit).pack(pady=20)
+
+    def save_score(self):
+        connection = None  # Initialize connection variable
+        try:
+            connection = mysql.connector.connect(
+                host="172.20.10.3",  # Update this to your server's IP address
+                user="akshay",        # Your MySQL username
+                password="2121",      # Your MySQL password
+                database="quiz_event" # Your database name
+            )
+            cursor = connection.cursor()
+            sql = "INSERT INTO students123 (student_name, student_id, Std_score, college_name) VALUES (%s, %s, %s, %s)"
+            values = (self.student_name.get(), self.student_id.get(), self.score, self.college_name.get())
+            cursor.execute(sql, values)
+            connection.commit()
+            messagebox.showinfo("Success", "Score saved successfully!")
+
+            # Record the attempt
+            student = f"{self.student_name.get()}_{self.student_id.get()}"
+            with open(self.attempts_file, 'a') as file:
+                file.write(f"{student}\n")
+        except mysql.connector.Error as err:
+            messagebox.showerror("Database Error", f"Error: {err}")
+        finally:
+            if connection is not None and connection.is_connected():  # Check if connection was created
+                cursor.close()
+                connection.close()
+
+    def clear_screen(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+if __name__ == '__main__':
+    root = tk.Tk()
+    app = QuizApp(root)
+    root.mainloop()

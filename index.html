@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Competition</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="header">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="College Logo" class="college-logo">
+    <h2 class="college-name">GH Raisoni College Of Engineering and Management, Jalgaon</h2>
+  </header>
+
+  <video autoplay muted loop class="background-video">
+    <source src="{{ url_for('static', filename='cinematic.mp4') }}" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+  <div class="overlay"></div>
+
+  <main class="content">
+    <div class="event-info">
+      <p class="department-line">Department of Computer Application Organizes A National Level IT-Event</p>
+      <h1>Pinnacle <br>2024</h1>
+      <p class="slogan">Having fun and learning together can help you reach your goal.</p>
+    </div>
+
+    <div class="form">
+      <h1>IT-Quiz Competition</h1>
+      <form action="/start_quiz" method="POST">
+        <h3>Team Member 1</h3>
+        <input type="text" name="student1_name" placeholder="Enter Name" required aria-label="Team Member 1 Name">
+        <input type="tel" name="student1_phone" placeholder="Enter Phone Number" required pattern="[0-9]{10}"
+          aria-label="Team Member 1 Phone Number">
+        
+        <h3>Team Member 2</h3>
+        <input type="text" name="student2_name" placeholder="Enter Name" required aria-label="Team Member 2 Name">
+        <input type="tel" name="student2_phone" placeholder="Enter Phone Number" required pattern="[0-9]{10}"
+          aria-label="Team Member 2 Phone Number">
+        
+        <input type="text" name="college_name" placeholder="Enter College Name" required aria-label="College Name">
+        <button type="submit">Start Quiz</button>
+      </form>
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <ul>
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% endwith %}
+    </div>
+  </main>
+</body>
+
+</html>

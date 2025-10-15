@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <header class="header">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="College Logo" class="college-logo">
+        <h2 class="college-name">GH Raisoni College OF Engineering and Management, Jalgaon</h2>
+    </header>
+
+    <main class="result-content">
+        <h1>Quiz Over!</h1>
+        <p class="wishing-message">Thank you for participating!</p>
+        <p class="wishing-message">We hope for the best for you. Please wait patiently for the results.</p>
+        <a href="/" class="back-link">Go Back</a>
+    </main>
+</body>
+
+</html>

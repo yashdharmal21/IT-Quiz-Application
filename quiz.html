@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz - Question {{ question_num }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+    let timeLeft = {{ session['time_left'] }};
+
+    function updateTimer() {
+      const timerDisplay = document.getElementById('timer');
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerDisplay.innerText = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('quiz-form').submit();
+      } else {
+        timeLeft--;
+      }
+    }
+
+    let timerInterval = setInterval(updateTimer, 1000);
+
+
+
+    document.addEventListener('contextmenu', function (event) {
+      event.preventDefault();
+    });
+
+    document.addEventListener('keydown', function (event) {
+      // Disable F12 (Open DevTools)
+      if (event.keyCode == 123) {
+        event.preventDefault();
+      }
+
+      // Disable Ctrl+Shift+I (Open DevTools)
+      if (event.ctrlKey && event.shiftKey && event.keyCode == 73) {
+        event.preventDefault();
+      }
+
+      // Disable Ctrl+Shift+J (Open DevTools)
+      if (event.ctrlKey && event.shiftKey && event.keyCode == 74) {
+        event.preventDefault();
+      }
+
+      // Disable Ctrl+U (View Source)
+      if (event.ctrlKey && event.keyCode == 85) {
+        event.preventDefault();
+      }
+    });
+
+  </script>
+</head>
+
+<body>
+  <header class="header">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="College Logo" class="college-logo">
+    <h2 class="college-name">GH Raisoni College OF Engineering and Management, Jalgaon</h2>
+  </header>
+
+
+  <main class="quiz-content">
+    <h1>Question {{ question_num }}</h1>
+    <p class="question-text">{{ question['question'] }}</p>
+    <p id="timer" style="color: red; font-size: 20px;">Time Left: 15:00</p>
+    <form action="/next_question" method="POST" class="quiz-form" id="quiz-form">
+      <div class="options-container">
+        {% for option in question['options'] %}
+        <div class="option">
+          <input type="radio" name="answer" value="{{ option }}" required id="option-{{ loop.index }}">
+          <label for="option-{{ loop.index }}">{{ option }}</label>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="next-button">Next</button>
+    </form>
+  </main>
+</body>
+
+</html>
